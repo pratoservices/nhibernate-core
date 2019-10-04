@@ -8,6 +8,7 @@ using NHibernate.Persister.Collection;
 using NHibernate.Persister.Entity;
 using NHibernate.SqlCommand;
 using NHibernate.Transform;
+using NHibernate.Tuple.Entity;
 using NHibernate.Util;
 
 namespace NHibernate.Loader.Criteria
@@ -133,11 +134,11 @@ namespace NHibernate.Loader.Criteria
 					if (numColumns > 1)
 					{
 						string[] typeColumnAliases = ArrayHelper.Slice(cachedProjectedColumnAliases, position, numColumns);
-						result[i] = ResultTypes[i].NullSafeGet(rs, typeColumnAliases, session, null);
+						result[i] = CustomEntityTypeMapper.Map(ResultTypes[i]).NullSafeGet(rs, typeColumnAliases, session, null);
 					}
 					else
 					{
-						result[i] = ResultTypes[i].NullSafeGet(rs, cachedProjectedColumnAliases[position], session, null);
+						result[i] = CustomEntityTypeMapper.Map(ResultTypes[i]).NullSafeGet(rs, cachedProjectedColumnAliases[position], session, null);
 					}
 					position += numColumns;
 				}

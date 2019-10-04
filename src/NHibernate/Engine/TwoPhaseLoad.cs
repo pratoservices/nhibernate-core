@@ -11,6 +11,7 @@ using NHibernate.Type;
 using NHibernate.Properties;
 using System;
 using System.Collections.Generic;
+using NHibernate.Tuple.Entity;
 
 namespace NHibernate.Engine
 {
@@ -22,6 +23,53 @@ namespace NHibernate.Engine
 	public static partial class TwoPhaseLoad
 	{
 		private static readonly INHibernateLogger log = NHibernateLogger.For(typeof(TwoPhaseLoad));
+
+		// Since 5.3
+		[Obsolete("Use the overload without the lazyPropertiesAreUnfetched parameter")]
+		public static void AddUninitializedCachedEntity(EntityKey key, object obj, IEntityPersister persister, LockMode lockMode, bool lazyPropertiesAreUnfetched, object version, ISessionImplementor session)
+		{
+			session.PersistenceContext.AddEntity(obj, Status.Loading, null, key, version, lockMode, true, persister, false, lazyPropertiesAreUnfetched);
+		}
+
+		public static void AddUninitializedCachedEntity(EntityKey key, object obj, IEntityPersister persister, LockMode lockMode, object version, ISessionImplementor session)
+		{
+			session.PersistenceContext.AddEntity(obj, Status.Loading, null, key, version, lockMode, true, persister, false);
+		}
+
+		/// <summary>
+		/// Add an uninitialized instance of an entity class, as a placeholder to ensure object
+		/// identity. Must be called before <tt>postHydrate()</tt>.
+		/// Create a "temporary" entry for a newly instantiated entity. The entity is uninitialized,
+		/// but we need the mapping from id to instance in order to guarantee uniqueness.
+		/// </summary>
+		// Since 5.3
+		[Obsolete("Use the overload without the lazyPropertiesAreUnfetched parameter")]
+		public static void AddUninitializedEntity(EntityKey key, object obj, IEntityPersister persister, LockMode lockMode, bool lazyPropertiesAreUnfetched, ISessionImplementor session)
+		{
+			session.PersistenceContext.AddEntity(obj, Status.Loading, null, key, null, lockMode, true, persister, false, lazyPropertiesAreUnfetched);
+		}
+
+		/// <summary>
+		/// Add an uninitialized instance of an entity class, as a placeholder to ensure object
+		/// identity. Must be called before <tt>postHydrate()</tt>.
+		/// Create a "temporary" entry for a newly instantiated entity. The entity is uninitialized,
+		/// but we need the mapping from id to instance in order to guarantee uniqueness.
+		/// </summary>
+		public static void AddUninitializedEntity(EntityKey key, object obj, IEntityPersister persister, LockMode lockMode, ISessionImplementor session)
+		{
+			session.PersistenceContext.AddEntity(obj, Status.Loading, null, key, null, lockMode, true, persister, false);
+		}
+
+		/// <summary>
+		/// Perform the second step of 2-phase load. Fully initialize the entity instance.
+		/// After processing a JDBC result set, we "resolve" all the associations
+		/// between the entities which were instantiated and had their state
+		/// "hydrated" into an array
+		/// </summary>
+		public static void InitializeEntity(object entity, bool readOnly, ISessionImplementor session, PreLoadEvent preLoadEvent, PostLoadEvent postLoadEvent)
+		{
+			InitializeEntity(entity, readOnly, session, preLoadEvent, postLoadEvent, null);
+		}
 
 		/// <summary>
 		/// Register the "hydrated" state of an entity instance, after the first step of 2-phase loading.
@@ -69,19 +117,8 @@ namespace NHibernate.Engine
 		/// between the entities which were instantiated and had their state
 		/// "hydrated" into an array
 		/// </summary>
-		public static void InitializeEntity(object entity, bool readOnly, ISessionImplementor session, PreLoadEvent preLoadEvent, PostLoadEvent postLoadEvent)
-		{
-			InitializeEntity(entity, readOnly, session, preLoadEvent, postLoadEvent, null);
-		}
-		
-		/// <summary>
-		/// Perform the second step of 2-phase load. Fully initialize the entity instance.
-		/// After processing a JDBC result set, we "resolve" all the associations
-		/// between the entities which were instantiated and had their state
-		/// "hydrated" into an array
-		/// </summary>
 		internal static void InitializeEntity(object entity, bool readOnly, ISessionImplementor session, PreLoadEvent preLoadEvent, PostLoadEvent postLoadEvent,
-		                                      Action<IEntityPersister, CachePutData> cacheBatchingHandler)
+											  Action<IEntityPersister, CachePutData> cacheBatchingHandler)
 		{
 			//TODO: Should this be an InitializeEntityEventListener??? (watch out for performance!)
 
@@ -118,13 +155,13 @@ namespace NHibernate.Engine
 						continue;
 					}
 
-					hydratedState[i] = types[i].ResolveIdentifier(value, session, entity);
+					hydratedState[i] = CustomEntityTypeMapper.Map(types[i]).ResolveIdentifier(value, session, entity);
 				}
 			}
 
 			foreach (var i in collectionToResolveIndexes)
 			{
-				hydratedState[i] = types[i].ResolveIdentifier(hydratedState[i], session, entity);
+				hydratedState[i] = CustomEntityTypeMapper.Map(types[i]).ResolveIdentifier(hydratedState[i], session, entity);
 			}
 
 			//Must occur after resolving identifiers!
@@ -133,7 +170,7 @@ namespace NHibernate.Engine
 				preLoadEvent.Entity = entity;
 				preLoadEvent.State = hydratedState;
 				preLoadEvent.Id = id;
-				preLoadEvent.Persister=persister;
+				preLoadEvent.Persister = persister;
 				IPreLoadEventListener[] listeners = session.Listeners.PreLoadEventListeners;
 				for (int i = 0; i < listeners.Length; i++)
 				{
@@ -142,7 +179,7 @@ namespace NHibernate.Engine
 			}
 
 			persister.SetPropertyValues(entity, hydratedState);
-			
+
 			ISessionFactoryImplementor factory = session.Factory;
 
 			if (persister.HasCache && session.CacheMode.HasFlag(CacheMode.Put))
@@ -170,8 +207,8 @@ namespace NHibernate.Engine
 				{
 					bool put =
 						persister.Cache.Put(cacheKey, persister.CacheEntryStructure.Structure(entry), session.Timestamp, version,
-						                    persister.IsVersioned ? persister.VersionType.Comparator : null,
-						                    UseMinimalPuts(session, entityEntry));
+											persister.IsVersioned ? persister.VersionType.Comparator : null,
+											UseMinimalPuts(session, entityEntry));
 
 					if (put && factory.Statistics.IsStatisticsEnabled)
 					{
@@ -179,9 +216,9 @@ namespace NHibernate.Engine
 					}
 				}
 			}
-			
+
 			bool isReallyReadOnly = readOnly;
-			
+
 			if (!persister.IsMutable)
 			{
 				isReallyReadOnly = true;
@@ -193,7 +230,7 @@ namespace NHibernate.Engine
 				{
 					// there is already a proxy for this impl
 					// only set the status to read-only if the proxy is read-only
-					isReallyReadOnly = ((INHibernateProxy)proxy).HibernateLazyInitializer.ReadOnly;
+					isReallyReadOnly = ((INHibernateProxy) proxy).HibernateLazyInitializer.ReadOnly;
 				}
 			}
 
@@ -241,42 +278,6 @@ namespace NHibernate.Engine
 			return (session.Factory.Settings.IsMinimalPutsEnabled && session.CacheMode != CacheMode.Refresh)
 			// Use minimal puts also for cacheable lazy properties in order to avoid sending large objects (e.g. an image)
 			|| (entityEntry.Persister.HasLazyProperties && entityEntry.Persister.IsLazyPropertiesCacheable);
-		}
-
-		/// <summary>
-		/// Add an uninitialized instance of an entity class, as a placeholder to ensure object
-		/// identity. Must be called before <tt>postHydrate()</tt>.
-		/// Create a "temporary" entry for a newly instantiated entity. The entity is uninitialized,
-		/// but we need the mapping from id to instance in order to guarantee uniqueness.
-		/// </summary>
-		// Since 5.3
-		[Obsolete("Use the overload without the lazyPropertiesAreUnfetched parameter")]
-		public static void AddUninitializedEntity(EntityKey key, object obj, IEntityPersister persister, LockMode lockMode, bool lazyPropertiesAreUnfetched, ISessionImplementor session)
-		{
-			session.PersistenceContext.AddEntity(obj, Status.Loading, null, key, null, lockMode, true, persister, false, lazyPropertiesAreUnfetched);
-		}
-
-		/// <summary>
-		/// Add an uninitialized instance of an entity class, as a placeholder to ensure object
-		/// identity. Must be called before <tt>postHydrate()</tt>.
-		/// Create a "temporary" entry for a newly instantiated entity. The entity is uninitialized,
-		/// but we need the mapping from id to instance in order to guarantee uniqueness.
-		/// </summary>
-		public static void AddUninitializedEntity(EntityKey key, object obj, IEntityPersister persister, LockMode lockMode, ISessionImplementor session)
-		{
-			session.PersistenceContext.AddEntity(obj, Status.Loading, null, key, null, lockMode, true, persister, false);
-		}
-
-		// Since 5.3
-		[Obsolete("Use the overload without the lazyPropertiesAreUnfetched parameter")]
-		public static void AddUninitializedCachedEntity(EntityKey key, object obj, IEntityPersister persister, LockMode lockMode, bool lazyPropertiesAreUnfetched, object version, ISessionImplementor session)
-		{
-			session.PersistenceContext.AddEntity(obj, Status.Loading, null, key, version, lockMode, true, persister, false, lazyPropertiesAreUnfetched);
-		}
-
-		public static void AddUninitializedCachedEntity(EntityKey key, object obj, IEntityPersister persister, LockMode lockMode, object version, ISessionImplementor session)
-		{
-			session.PersistenceContext.AddEntity(obj, Status.Loading, null, key, version, lockMode, true, persister, false);
 		}
 	}
 }

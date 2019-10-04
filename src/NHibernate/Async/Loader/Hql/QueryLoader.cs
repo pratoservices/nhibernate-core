@@ -27,6 +27,7 @@ using NHibernate.Transform;
 using NHibernate.Type;
 using NHibernate.Util;
 using IQueryable = NHibernate.Persister.Entity.IQueryable;
+using NHibernate.Tuple.Entity;
 
 namespace NHibernate.Loader.Hql
 {
@@ -76,7 +77,7 @@ namespace NHibernate.Loader.Hql
 				resultRow = new object[queryCols];
 				for (int i = 0; i < queryCols; i++)
 				{
-					resultRow[i] = await (ResultTypes[i].NullSafeGetAsync(rs, scalarColumns[i], session, null, cancellationToken)).ConfigureAwait(false);
+					resultRow[i] = await (CustomEntityTypeMapper.Map(ResultTypes[i]).NullSafeGetAsync(rs, scalarColumns[i], session, null, cancellationToken)).ConfigureAwait(false);
 				}
 			}
 			else

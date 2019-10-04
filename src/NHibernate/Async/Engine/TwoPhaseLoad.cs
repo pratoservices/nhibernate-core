@@ -21,6 +21,7 @@ using NHibernate.Type;
 using NHibernate.Properties;
 using System;
 using System.Collections.Generic;
+using NHibernate.Tuple.Entity;
 
 namespace NHibernate.Engine
 {
@@ -89,13 +90,13 @@ namespace NHibernate.Engine
 						continue;
 					}
 
-					hydratedState[i] = await (types[i].ResolveIdentifierAsync(value, session, entity, cancellationToken)).ConfigureAwait(false);
+					hydratedState[i] = await (CustomEntityTypeMapper.Map(types[i]).ResolveIdentifierAsync(value, session, entity, cancellationToken)).ConfigureAwait(false);
 				}
 			}
 
 			foreach (var i in collectionToResolveIndexes)
 			{
-				hydratedState[i] = await (types[i].ResolveIdentifierAsync(hydratedState[i], session, entity, cancellationToken)).ConfigureAwait(false);
+				hydratedState[i] = await (CustomEntityTypeMapper.Map(types[i]).ResolveIdentifierAsync(hydratedState[i], session, entity, cancellationToken)).ConfigureAwait(false);
 			}
 
 			//Must occur after resolving identifiers!

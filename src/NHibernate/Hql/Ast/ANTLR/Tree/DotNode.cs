@@ -6,6 +6,7 @@ using NHibernate.Hql.Ast.ANTLR.Util;
 using NHibernate.Persister.Collection;
 using NHibernate.Persister.Entity;
 using NHibernate.SqlCommand;
+using NHibernate.Tuple.Entity;
 using NHibernate.Type;
 using NHibernate.Util;
 
@@ -195,7 +196,7 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 				return;
 			}
 
-			IType propertyType = PrepareLhs(); // Prepare the left hand side and get the data type.
+			IType propertyType = CustomEntityTypeMapper.Map(PrepareLhs()); // Prepare the left hand side and get the data type.
 
 			// If there is no data type for this node, and we're at the end of the path (top most dot node), then
 			// this might be a Java constant.

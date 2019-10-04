@@ -7,6 +7,7 @@ using NHibernate.Intercept;
 using NHibernate.Persister.Collection;
 using NHibernate.Properties;
 using NHibernate.Tuple;
+using NHibernate.Tuple.Entity;
 
 namespace NHibernate.Type
 {
@@ -75,7 +76,11 @@ namespace NHibernate.Type
 				}
 				else
 				{
-					assembled[i] = types[i].Assemble(row[i], session, owner);
+					var type = CustomEntityTypeMapper.Map(types[i] as IType);
+					if (type != null)
+						assembled[i] = type.Assemble(row[i], session, owner);
+					else
+						assembled[i] = types[i].Assemble(row[i], session, owner);
 				}
 			}
 			return assembled;
@@ -105,7 +110,11 @@ namespace NHibernate.Type
 				}
 				else
 				{
-					assembled[i] = types[i].Assemble(row[i], session, null);
+					var type = CustomEntityTypeMapper.Map(types[i] as IType);
+					if (type != null)
+						assembled[i] = type.Assemble(row[i], session, null);
+					else
+						assembled[i] = types[i].Assemble(row[i], session, null);
 				}
 			}
 
@@ -397,7 +406,7 @@ namespace NHibernate.Type
 			if (Equals(LazyPropertyInitializer.UnfetchedProperty, previousState[i]))
 				return true;
 			return properties[i].IsDirtyCheckable() &&
-				   properties[i].Type.IsDirty(previousState[i], currentState[i], includeColumns[i], session);
+			       CustomEntityTypeMapper.Map(properties[i].Type).IsDirty(previousState[i], currentState[i], includeColumns[i], session);
 		}
 
 		/// <summary>

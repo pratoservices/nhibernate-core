@@ -14,6 +14,7 @@ using NHibernate.Persister.Collection;
 using NHibernate.Persister.Entity;
 using NHibernate.SqlCommand;
 using NHibernate.Transform;
+using NHibernate.Tuple.Entity;
 using NHibernate.Type;
 using NHibernate.Util;
 using IQueryable = NHibernate.Persister.Entity.IQueryable;
@@ -401,7 +402,7 @@ namespace NHibernate.Loader.Hql
 				resultRow = new object[queryCols];
 				for (int i = 0; i < queryCols; i++)
 				{
-					resultRow[i] = ResultTypes[i].NullSafeGet(rs, scalarColumns[i], session, null);
+					resultRow[i] = CustomEntityTypeMapper.Map(ResultTypes[i]).NullSafeGet(rs, scalarColumns[i], session, null);
 				}
 			}
 			else

@@ -17,6 +17,7 @@ using NHibernate.Intercept;
 using NHibernate.Persister.Collection;
 using NHibernate.Properties;
 using NHibernate.Tuple;
+using NHibernate.Tuple.Entity;
 
 namespace NHibernate.Type
 {
@@ -63,7 +64,11 @@ namespace NHibernate.Type
 				}
 				else
 				{
-					assembled[i] = await (types[i].AssembleAsync(row[i], session, owner, cancellationToken)).ConfigureAwait(false);
+					var type = CustomEntityTypeMapper.Map(types[i] as IType);
+					if(type != null)
+						assembled[i] = await (type.AssembleAsync(row[i], session, owner, cancellationToken)).ConfigureAwait(false);
+					else
+						assembled[i] = await (types[i].AssembleAsync(row[i], session, owner, cancellationToken)).ConfigureAwait(false);
 				}
 			}
 			return assembled;
@@ -95,7 +100,11 @@ namespace NHibernate.Type
 				}
 				else
 				{
-					assembled[i] = await (types[i].AssembleAsync(row[i], session, null, cancellationToken)).ConfigureAwait(false);
+					var type = CustomEntityTypeMapper.Map(types[i] as IType);
+					if(type != null)
+						assembled[i] = await (type.AssembleAsync(row[i], session, null, cancellationToken)).ConfigureAwait(false);
+					else
+						assembled[i] = await (types[i].AssembleAsync(row[i], session, null, cancellationToken)).ConfigureAwait(false);
 				}
 			}
 
@@ -405,7 +414,7 @@ namespace NHibernate.Type
 			if (Equals(LazyPropertyInitializer.UnfetchedProperty, previousState[i]))
 				return true;
 			return properties[i].IsDirtyCheckable() &&
-				   await (properties[i].Type.IsDirtyAsync(previousState[i], currentState[i], includeColumns[i], session, cancellationToken)).ConfigureAwait(false);
+				   await (CustomEntityTypeMapper.Map(properties[i].Type).IsDirtyAsync(previousState[i], currentState[i], includeColumns[i], session, cancellationToken)).ConfigureAwait(false);
 		}
 
 		/// <summary>
