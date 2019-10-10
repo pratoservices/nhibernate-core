@@ -469,6 +469,11 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 				_joinType = Walker.ImpliedJoinType;
 			}
 
+			if (!impliedJoin && propertyType.IsNullable)
+			{
+				_joinType = JoinType.LeftOuterJoin;
+			}
+
 			FromClause currentFromClause = Walker.CurrentFromClause;
 			FromElement elem = currentFromClause.FindJoinByPath( joinPath );
 
