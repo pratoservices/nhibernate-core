@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using NHibernate.Linq.Expressions;
 using NHibernate.Linq.ReWriters;
+using NHibernate.Tuple.Entity;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.Expressions;
 using Remotion.Linq.Parsing;
@@ -44,7 +45,7 @@ namespace NHibernate.Linq.Visitors
 				_memberExpressionDepth--;
 
 			if (_isEntityDecider.IsEntity(expression.Type) &&
-				((_requiresJoinForNonIdentifier && !_hasIdentifier) || _memberExpressionDepth > 0) &&
+				((_requiresJoinForNonIdentifier && !_hasIdentifier && !CustomEntityTypeMapper.IsKnownType(expression.Type)) || _memberExpressionDepth > 0) &&
 				_joiner.CanAddJoin(expression))
 			{
 				var key = ExpressionKeyVisitor.Visit(expression, null);
