@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using NHibernate.Type;
 
 namespace NHibernate.Tuple.Entity
@@ -45,11 +44,6 @@ namespace NHibernate.Tuple.Entity
 				key = entityType.Name + "#" + entityType.RHSUniqueKeyPropertyName;
 			}
 			return key;
-		}
-
-		public static bool IsKnownType(System.Type type)
-		{
-			return TypeDict.Keys.Any(key => key.StartsWith(type.FullName));
 		}
 	}
 }

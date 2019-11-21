@@ -154,7 +154,30 @@ namespace NHibernate.Type
 
 		protected internal object GetIdentifier(object value, ISessionImplementor session)
 		{
-			return ForeignKeys.GetEntityIdentifierIfNotUnsaved(GetAssociatedEntityName(), value, session); //tolerates nulls
+			if (IsReferenceToPrimaryKey)
+			{
+				return ForeignKeys.GetEntityIdentifierIfNotUnsaved(GetAssociatedEntityName(), value, session); //tolerates nulls
+			}
+			else if (value == null)
+			{
+				return null;
+			}
+			else
+			{
+				IEntityPersister entityPersister = session.Factory.GetEntityPersister(GetAssociatedEntityName());
+				object propertyValue = entityPersister.GetPropertyValue(value, uniqueKeyPropertyName);
+
+				// We now have the value of the property-ref we reference.  However,
+				// we need to dig a little deeper, as that property might also be
+				// an entity type, in which case we need to resolve its identitifier
+				IType type = entityPersister.GetPropertyType(uniqueKeyPropertyName);
+				if (type.IsEntityType)
+				{
+					propertyValue = ((EntityType)type).GetIdentifier(propertyValue, session);
+				}
+
+				return propertyValue;
+			}
 		}
 
 		protected internal object GetReferenceValue(object value, ISessionImplementor session)
