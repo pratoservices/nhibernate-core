@@ -162,18 +162,6 @@ namespace NHibernate.Type
 			return value.GetType() == identifierType.ReturnedClass;
 		}
 
-		public override bool IsNull(object owner, ISessionImplementor session)
-		{
-			if (IsNullable && !string.IsNullOrEmpty(PropertyName))
-			{
-				EntityEntry entry = session.PersistenceContext.GetEntry(owner);
-
-				return session.PersistenceContext.IsPropertyNull(entry.EntityKey, PropertyName);
-			}
-
-			return false;
-		}
-
 		public override object Disassemble(object value, ISessionImplementor session, object owner)
 		{
 			if (value == null)
