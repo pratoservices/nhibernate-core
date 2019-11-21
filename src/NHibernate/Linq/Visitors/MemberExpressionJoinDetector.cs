@@ -22,7 +22,6 @@ namespace NHibernate.Linq.Visitors
 
 		private bool _requiresJoinForNonIdentifier;
 		private bool _preventJoinsInConditionalTest;
-		private bool _hasIdentifier;
 		private int _memberExpressionDepth;
 
 		public MemberExpressionJoinDetector(IIsEntityDecider isEntityDecider, IJoiner joiner)
@@ -34,8 +33,6 @@ namespace NHibernate.Linq.Visitors
 		protected override Expression VisitMember(MemberExpression expression)
 		{
 			var isIdentifier = _isEntityDecider.IsIdentifier(expression.Expression.Type, expression.Member.Name);
-			if (isIdentifier)
-				_hasIdentifier = true;
 			if (!isIdentifier)
 				_memberExpressionDepth++;
 
@@ -44,15 +41,14 @@ namespace NHibernate.Linq.Visitors
 			if (!isIdentifier)
 				_memberExpressionDepth--;
 
-			if (_isEntityDecider.IsEntity(expression.Type) &&
-				((_requiresJoinForNonIdentifier && !_hasIdentifier && !CustomEntityTypeMapper.IsKnownType(expression.Type)) || _memberExpressionDepth > 0) &&
-				_joiner.CanAddJoin(expression))
-			{
-				var key = ExpressionKeyVisitor.Visit(expression, null);
-				return _joiner.AddJoin(result, key);
-			}
+			//if (_isEntityDecider.IsEntity(expression.Type) &&
+			//	((_requiresJoinForNonIdentifier && !_hasIdentifier && !CustomEntityTypeMapper.IsKnownType(expression.Type)) || _memberExpressionDepth > 0) &&
+			//	_joiner.CanAddJoin(expression))
+			//{
+			//	var key = ExpressionKeyVisitor.Visit(expression, null);
+			//	return _joiner.AddJoin(result, key);
+			//}
 
-			_hasIdentifier = false;
 			return result;
 		}
 
