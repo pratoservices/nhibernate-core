@@ -337,21 +337,7 @@ namespace NHibernate.Loader.Criteria
 		/// </summary>
 		public IReadOnlyCollection<string> GetChildAliases(string parentSqlAlias, string childPath)
 		{
-			var alias = new List<string>();
-
-			if (!sqlAliasToCriteriaAliasMap.TryGetValue(parentSqlAlias, out var parentAlias))
-				parentAlias = rootCriteria.Alias;
-
-			if (!associationAliasToChildrenAliasesMap.TryGetValue(parentAlias, out var children))
-				return alias;
-
-			foreach (var child in children)
-			{
-				if (associationPathJoinTypesMap.ContainsKey(new AliasKey(child, childPath)))
-					alias.Add(child);
-			}
-
-			return alias;
+			return associationPathJoinTypesMap.Keys.Where(aliasKey => aliasKey.Path == childPath).Select(aliasKey => aliasKey.Alias).ToList();
 		}
 
 		// Since v5.2
