@@ -1100,7 +1100,10 @@ namespace NHibernate.Loader
 				return;
 			var type = persister.PropertyTypes[index];
 			if (!alreadyLoaded)
+			{
 				type = type.GetSemiResolvedType(session.Factory);
+				ukValue = type.SemiResolve(ukValue, session, obj);
+			}
 			var euk = new EntityUniqueKey(persister.EntityName, ukName, ukValue, type, session.Factory);
 			session.PersistenceContext.AddEntity(euk, obj);
 		}
