@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>PFW.NHibernate</id>
-    <version>5.2.5</version>
+    <version>5.2.6</version>
     <title>PFW.NHibernate</title>
     <authors>Prato</authors>
     <owners>Prato</owners>

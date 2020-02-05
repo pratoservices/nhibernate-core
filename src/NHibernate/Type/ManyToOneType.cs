@@ -154,12 +154,33 @@ namespace NHibernate.Type
 
 		private bool IsIdentifier(object value, ISessionImplementor session)
 		{
-			var identifierType = GetIdentifierType(session);
+			IType identifierType;
+			if (!IsReferenceToPrimaryKey)
+			{
+				identifierType = GetTypeOfPropertyReference(session);
+			}
+			else
+			{
+				identifierType = GetIdentifierType(session);
+			}
 			if (identifierType == null)
 			{
 				return false;
 			}
 			return value.GetType() == identifierType.ReturnedClass;
+		}
+
+		private IType GetTypeOfPropertyReference(ISessionImplementor session)
+		{
+			var associatedEntityPersister = session.Factory.GetEntityPersister(GetAssociatedEntityName());
+			var propertyIndex = 0;
+			for (int i = 0; i < associatedEntityPersister.PropertyNames.Length; i++)
+			{
+				propertyIndex = i;
+				if (associatedEntityPersister.PropertyNames[i] == RHSUniqueKeyPropertyName) break;
+			}
+
+			return associatedEntityPersister.PropertyTypes[propertyIndex];
 		}
 
 		public override object Disassemble(object value, ISessionImplementor session, object owner)
