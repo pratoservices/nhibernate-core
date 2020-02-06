@@ -184,6 +184,14 @@ namespace NHibernate.Util
 							parameters[sqlParameterPos++].BackTrack = paramTracker;
 						}
 
+						if(parameterSpecs.OfType<DynamicFilterParameterSpecification>().Any(p => p.FilterParameterFullName == dynamicFilterParameterSpecification.FilterParameterFullName))
+						{
+							var alreadyExistingParamSpecs = parameterSpecs.OfType<DynamicFilterParameterSpecification>().Where(p => p.FilterParameterFullName == dynamicFilterParameterSpecification.FilterParameterFullName).ToList();
+							foreach (var alreadyExistingParamSpec in alreadyExistingParamSpecs)
+							{
+								parameterSpecs.Remove(alreadyExistingParamSpec);
+							}
+						}
 						parameterSpecs.Add(dynamicFilterParameterSpecification);
 						result.Add(filterParameterFragment);
 					}
